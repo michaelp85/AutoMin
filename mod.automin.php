@@ -39,6 +39,7 @@ class Automin {
 	 * @author Jesse Bunch
 	*/
 	const MARKUP_TYPE_JS = 'js';
+	const MARKUP_TYPE_LABJS = 'labjs';
 	const MARKUP_TYPE_CSS = 'css';
 	const MARKUP_TYPE_LESS = 'less';
 	
@@ -77,6 +78,18 @@ class Automin {
 			self::MARKUP_TYPE_JS
 		);
 	}
+	
+	/**
+	 * exp:automin:labjs
+	 * @author Michael Pasqualone <mpasqualone+github@me.com>
+	 */
+	public function labjs() {
+		$this->_write_log('Processing LABjs');
+		return $this->return_data = $this->_process_markup(
+			$this->EE->TMPL->tagdata,
+			self::MARKUP_TYPE_LABJS
+		);
+	}
 
 	/**
 	 * exp:automin:less
@@ -113,7 +126,18 @@ class Automin {
 
 		// File Extension
 		// LESS files should have a .css extension
-		$extension = ($markup_type == self::MARKUP_TYPE_LESS) ? self::MARKUP_TYPE_CSS : $markup_type;
+		// LABjs files should have a .js extension
+		switch ($markup_type) {
+			case self::MARKUP_TYPE_LESS:
+				$extension = self::MARKUP_TYPE_CSS;
+				break;
+			case self::MARKUP_TYPE_LABJS:
+				$extension = self::MARKUP_TYPE_JS;
+				break;
+			default:
+				$extension = $markup_type;
+		}
+		
 		$cache_key = $this->EE->automin_caching_library->get_cache_key($markup, $extension);
 
 		// Fetch and validate cache
@@ -225,6 +249,7 @@ class Automin {
 					break;
 
 				case self::MARKUP_TYPE_JS:
+				case self::MARKUP_TYPE_LABJS:
 					
 					// Compile JS
 					require_once('libraries/class.jsmin.php');
@@ -287,6 +312,15 @@ class Automin {
 					'<script src="%s" %s></script>', 
 					$cache_filename, 
 					$attributes_string
+				);
+				break;
+				
+			case self::MARKUP_TYPE_LABJS:
+				$str_cache_filename = str_replace('labjs','js', $cache_filename);
+				$markup_output = sprintf(
+					'<script %s>$LAB.script("%s");</script>',
+					$attributes_string,
+					$str_cache_filename
 				);
 				break;
 
@@ -410,6 +444,7 @@ class Automin {
 				);
 				break;
 			case self::MARKUP_TYPE_JS:
+			case self::MARKUP_TYPE_LABJS:
 				preg_match_all(
 					"/src\=\"([A-Za-z0-9\.\/\_\-\?\=\:]+.js)\"/",
 					$markup,
